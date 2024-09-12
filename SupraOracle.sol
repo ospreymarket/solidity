@@ -12,8 +12,9 @@ contract SupraOracle is Ownable, PriceOracle {
     using SafeMath for uint32;
     using SafeMath for uint;
     address public oracleAddress;
-    uint256 public priceInvalidAfterSeconds = 43200 * 1000;
+    uint256 public priceInvalidAfterSeconds = 43200;
     mapping (address => uint256) public addressToPairId;
+    mapping (address => bool) public isEtherAsset;
 
     error OraclePriceLessThanZero();
     error OraclePriceInvalid();
@@ -27,6 +28,12 @@ contract SupraOracle is Ownable, PriceOracle {
 
     function setPriceInvalidAfterSeconds (uint256 _priceInvalidAfterSeconds) external onlyOwner {
         priceInvalidAfterSeconds = _priceInvalidAfterSeconds;
+    }
+
+    function setEtherAssets(address[] memory addresses, bool[] memory values) external onlyOwner {
+        for (uint i=0; i<addresses.length; i++) {
+            isEtherAsset[addresses[i]] = values[i];
+        }
     }
 
     function setPairIds (address[] calldata underlyingAssets, uint256[] calldata pairIds) external onlyOwner {
@@ -61,7 +68,7 @@ contract SupraOracle is Ownable, PriceOracle {
 
     function _getUnderlyingAddress(PToken pToken) internal view returns (address) {
         address asset;
-        if (compareStrings(pToken.symbol(), "pETH")) {
+        if (isEtherAsset[address(pToken)]) {
             asset = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         } else {
             asset = PErc20(address(pToken)).underlying();
